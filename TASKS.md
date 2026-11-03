@@ -48,10 +48,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: null/blank/overlong identifiers rejected; 255-character IDs accepted; IDs are not normalized; every request type retains its fields and failure outcomes preserve stable codes. Avoid trivial getters-only tests.
   - Evidence: exact BalanceService API, immutable operation envelope/final outcome, BalanceException stable codes, and identifier-only validation added. `RequestValidationTest` covers every identifier position with null/blank/overlong values, 255-character boundaries, unchanged identifiers, deferred invalid amounts/self-transfer, and every failure-code report. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (16 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T08 — Implement safe keyed ReentrantLock leases.** Depends on T01.
+- [x] **T08 — Implement safe keyed ReentrantLock leases.** Depends on T01.
   - Implement reference-counted slots covering owners/waiters, atomic slot lifecycle, and owning-thread lease release. Do not block inside map computations or leak one slot per transaction forever.
   - Tests: same-key mutual exclusion, distinct-key progress, queued waiter handoff, cleanup after normal/exceptional callback execution, and acquire/release/reacquire interleavings. Coordinate real threads; assertions must detect overlapping critical sections. Verify safe cleanup while a waiter exists.
-  - Evidence: pending.
+  - Evidence: KeyedLocks retains reference-counted slots before uninterruptible acquisition and removes them only after unlock and the last reference release. KeyedLocksTest coordinates 1600 same-key sections, queued-waiter/newcomer handoff, distinct-key progress, exception cleanup, wrong-thread release, double close, and final zero retained slots. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (19 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T09 — Implement ordered lock acquisition.** Depends on T07, T08.
   - Wire separate shared transaction/account registries. Acquire original-ID first, then distinct accounts sorted consistently; release in reverse order with structured cleanup. Handle self-transfer by deduplication.
