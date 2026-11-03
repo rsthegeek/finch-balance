@@ -53,10 +53,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: same-key mutual exclusion, distinct-key progress, queued waiter handoff, cleanup after normal/exceptional callback execution, and acquire/release/reacquire interleavings. Coordinate real threads; assertions must detect overlapping critical sections. Verify safe cleanup while a waiter exists.
   - Evidence: KeyedLocks retains reference-counted slots before uninterruptible acquisition and removes them only after unlock and the last reference release. KeyedLocksTest coordinates 1600 same-key sections, queued-waiter/newcomer handoff, distinct-key progress, exception cleanup, wrong-thread release, double close, and final zero retained slots. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (19 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T09 — Implement ordered lock acquisition.** Depends on T07, T08.
+- [x] **T09 — Implement ordered lock acquisition.** Depends on T07, T08.
   - Wire separate shared transaction/account registries. Acquire original-ID first, then distinct accounts sorted consistently; release in reverse order with structured cleanup. Handle self-transfer by deduplication.
   - Tests: reversed transfer arguments use the same acquisition order, self-transfer acquires once, exceptions release every acquired lease, identical original IDs serialize even for different operation types, and unrelated IDs/accounts progress.
-  - Evidence: pending.
+  - Evidence: Separate singleton transaction/account registries and structured OperationLocks enforce original-ID first, sorted distinct accounts, and reverse release. OperationLocksTest verifies both transfer directions, self-transfer deduplication, callback/partial-acquisition cleanup, cross-operation same-ID exclusion, and unrelated progress with bounded real threads. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (22 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T10 — Decode and validate stored outcomes.** Depends on T06, T07.
   - Translate complete entry groups into success or the original failure. Accept one SINGLE, a matching successful transfer pair, or one failed SOURCE. Validate pair amounts, accounts/counterparties, type, and status. Do not depend on query row order or incoming retry payloads.
