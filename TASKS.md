@@ -85,10 +85,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: normal/exact-balance debit, insufficient funds, invalid amount, unknown account, sequential duplicates, and failure replay after later funding. Two gated concurrent unique debits of 700 from 1000 yield one success, one final failure, balance 300, and two logical outcomes.
   - Evidence: Debit uses the shared single-entry path. DebitServiceTest checks exact history, normal/exact-balance debit, changed-payload and cross-operation success replay, invalid amounts, unknown accounts, final insufficient-funds replay after funding, and a two-caller gated 700-from-1000 race yielding one success, one persisted failure, and balance 300. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (37 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T15 — Implement atomic transfer.** Depends on T14.
+- [x] **T15 — Implement atomic transfer.** Depends on T14.
   - Wire two successful entries with reciprocal counterparties/equal amounts/shared Instant, or only one failed source entry preserving the intended destination. Commit both balances and entries together.
   - Tests: success and duplicate effects; unknown source/destination; insufficient funds; self-transfer; invalid amount; destination overflow. Assert exact balances, roles, counterparties, statuses, timestamps, and row counts; every business failure leaves both balances unchanged.
-  - Evidence: pending.
+  - Evidence: Transfer calculates both balances before mutation and commits reciprocal SOURCE/DESTINATION entries sharing one sampled Instant, or only the failed SOURCE with intended destination. TransferServiceTest verifies exact balances and complete entry contents, changed-payload duplicates, unknown source/destination, insufficient funds, self-transfer, zero/negative/Long.MIN_VALUE attempts, destination overflow, and Long.MAX_VALUE full-balance transfer. All business rejections preserve both balances. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (40 tests, zero style violations). `git diff --check` passed.
 
 ## Adversarial integration tests
 
