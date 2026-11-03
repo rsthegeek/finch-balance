@@ -36,10 +36,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: persist/flush/clear/reload every valid entry form, null counterparty/failure-code behavior, timestamp instant preservation, composite-ID equality/hash behavior, and mapping validation against real migrations.
   - Evidence: explicit JPA field mappings validate against unchanged V1/V2; enums use VARCHAR strings, history is immutable with no setters, and scalar account IDs permit unknown-account failures. `JpaMappingTest` passed all valid forms through persist/flush/clear and fresh-context reload, null fields, microsecond Instant round trips, account ownership/boundary balance, and composite-ID hash collection behavior. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (11 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T06 — Implement focused JPA persistence operations.** Depends on T05.
+- [x] **T06 — Implement focused JPA persistence operations.** Depends on T05.
   - Add account lookup and original-transaction-ID entry lookup plus explicit append-only entry persistence. Managed account changes use dirty tracking. Avoid save/merge overwriting caller-assigned history IDs.
   - Tests: real committed lookup/update round trips; all entries for one original ID are found; unrelated IDs are excluded; attempted duplicate append fails and cannot overwrite original history. Read assertions using a fresh persistence context.
-  - Evidence: pending.
+  - Evidence: `BalanceStore` provides parameterized original-ID lookup, managed account lookup, and append via EntityManager.persist only. `BalanceStoreTest` verifies real committed dirty tracking, complete pair lookup with unrelated-ID exclusion, and duplicate-append failure rolling back an account change while preserving original history, all inspected in fresh transactions. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (13 tests, zero style violations). `git diff --check` passed.
 
 ## Behavior and coordination primitives
 
