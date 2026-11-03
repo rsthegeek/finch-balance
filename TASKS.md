@@ -70,10 +70,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
 
 ## Service implementation
 
-- [ ] **T12 — Connect Java locks to a fresh JPA transaction.** Depends on T06, T09, T10, T11.
+- [x] **T12 — Connect Java locks to a fresh JPA transaction.** Depends on T06, T09, T10, T11.
   - Use `TransactionTemplate`/JPA transaction manager with READ_COMMITTED. Reject ambient transactions. Hold leases through actual commit/rollback; duplicate lookup precedes business validation. Return recorded business outcomes from the callback before public exception translation.
   - Tests: real transaction boundaries commit final business failures, roll back unexpected exceptions, and reject ambient transactions before writes. Assert entry/balance state after transaction completion, not only callback invocation. Keep any shared executor abstraction small.
-  - Evidence: pending.
+  - Evidence: OperationCoordinator rejects ambient transactions, checks stored groups before invoking new work, and holds structured leases around READ_COMMITTED TransactionTemplate completion with the JPA manager. OperationCoordinatorTest observes committed failure before public exception reporting, cross-type replay, actual post-flush rollback, ambient rejection without writes, and corrupt-group rejection without reexecution in fresh transactions. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (31 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T13 — Implement credit and getBalance.** Depends on T04, T12.
   - Wire the public credit path, successful/failed SINGLE entries, and account-locked balance reads. Sample creation instants from injected Clock.
