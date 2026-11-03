@@ -124,10 +124,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
 
 ## Review and delivery
 
-- [ ] **T22 — Write the submission README and audit completion.** Depends on T19, T20, T21.
+- [x] **T22 — Write the submission README and audit completion.** Depends on T19, T20, T21.
   - Document actual run/test commands, Java 25 selection, API usage, schema/seed data, lock order, database commit boundary, replay/failure semantics, single-JVM scope, retention/storage cost, and migration limitations. Explain AI-assisted work in terms the owner can defend; invent no performance results.
   - Verification: execute documented build commands from a clean checkout; all behavior tests and style checks pass under `./mvnw verify`; confirm JAR packaging and clean tracked outputs. Review every task's evidence against its acceptance tests and reconcile README claims with implementation. Do not add a dummy test just for README prose.
-  - Evidence: pending.
+  - Evidence: README documents the implemented API, Java 25 choice, exact schema/seeds, lock/commit and replay semantics, single-JVM scope, retention, reconciliation, migration limits, and AI-assisted review path. Clean local checkout at code commit `050af64` passed the exact documented `./mvnw clean verify`, `./mvnw spotless:apply`, and `./mvnw verify` commands (51 tests, no failures/errors/skips, zero style violations). Executable JAR manifest/migration contents and normal startup/file creation verified only in the temporary checkout. The exact README Java example compiled and ran twice in a separate temporary working directory, printing 1250 both times. Every prior task evidence/acceptance test was audited; local document links, clean checkout outputs, unchanged prior migrations, no tracked build/database files, and `git diff --check` passed. No blocked requirements; final changes are documentation only.
 
 ## Test discipline for every task
 
