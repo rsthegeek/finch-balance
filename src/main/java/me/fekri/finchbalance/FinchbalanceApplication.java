@@ -7,7 +7,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class FinchbalanceApplication {
 
-  /** Starts the Spring application context. */
+  /**
+   * Starts the Spring application context.
+   *
+   * @param args application arguments
+   */
   public static void main(String[] args) {
     SpringApplication.run(FinchbalanceApplication.class, args);
   }

@@ -11,10 +11,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
 
 ## Build and persistence foundation
 
-- [ ] **T01 — Enforce Google Java Style.** Depends on T00.
+- [x] **T01 — Enforce Google Java Style.** Depends on T00.
   - Add pinned Java-25-compatible Spotless/Google formatter and Google Checkstyle enforcement for production and test Java. Bind checks into `verify`; fail Checkstyle on warnings. Format the existing starter sources.
   - Verification: clean `./mvnw verify`; temporarily introduce a formatting violation in an isolated working copy and prove the check fails, then restore it. Similarly verify a selected non-formatting Checkstyle violation is rejected. Do not commit intentionally broken source or suppress violations.
-  - Evidence: pending.
+  - Evidence: Spotless 3.10.3 / Google Java Format 1.30.0 and Checkstyle plugin 3.6.0 / engine 10.26.1 pinned. `./mvnw --batch-mode --no-transfer-progress spotless:apply verify` and `./mvnw --offline --batch-mode --no-transfer-progress clean verify` passed (1 test, no style violations). Isolated temporary-copy `verify` rejected an indentation violation via Spotless and a formatted test-source `bad_name` member via Checkstyle at warning severity; both probes restored. `git diff --check` passed.
 
 - [ ] **T02 — Configure persistent H2 and test isolation.** Depends on T01.
   - Add the properties from PLAN.md, a test configuration using distinct named in-memory databases, UTC `Clock`, and database-file ignore rules. Flyway is the sole initializer; Hibernate validates schema.
