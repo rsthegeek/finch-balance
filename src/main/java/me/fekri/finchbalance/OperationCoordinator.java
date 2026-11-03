@@ -1,6 +1,7 @@
 package me.fekri.finchbalance;
 
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.stereotype.Component;
@@ -49,6 +50,10 @@ class OperationCoordinator {
   }
 
   long getBalance(String accountId) {
+    return readAccount(accountId, Account::balance);
+  }
+
+  <T> T readAccount(String accountId, Function<Account, T> read) {
     Identifiers.requireValid(accountId);
     rejectAmbientTransaction();
     return locks.withAccountLock(
@@ -60,7 +65,7 @@ class OperationCoordinator {
                   if (account == null) {
                     throw new BalanceException(FailureCode.ACCOUNT_NOT_FOUND);
                   }
-                  return account.balance();
+                  return read.apply(account);
                 }));
   }
 

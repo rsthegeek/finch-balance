@@ -1,6 +1,8 @@
 package me.fekri.finchbalance;
 
 import jakarta.persistence.EntityManager;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.List;
 import org.springframework.stereotype.Repository;
 
@@ -24,6 +26,26 @@ class BalanceStore {
             TransactionEntry.class)
         .setParameter("transactionId", transactionId)
         .getResultList();
+  }
+
+  BigInteger reconstruct(String accountId) {
+    BigDecimal total =
+        (BigDecimal)
+            entityManager
+                .createNativeQuery(
+                    """
+        SELECT COALESCE(SUM(CASE
+            WHEN entry_role = 'DESTINATION' OR (entry_role = 'SINGLE' AND type = 'CREDIT')
+                THEN CAST(amount AS DECIMAL(100, 0))
+            ELSE -CAST(amount AS DECIMAL(100, 0))
+        END), CAST(0 AS DECIMAL(100, 0)))
+        FROM transactions
+        WHERE account_id = :accountId AND status = 'SUCCEEDED'
+        """,
+                    BigDecimal.class)
+                .setParameter("accountId", accountId)
+                .getSingleResult();
+    return total.toBigIntegerExact();
   }
 
   // Persist deliberately bypasses save/merge: an existing history ID must fail, never overwrite.

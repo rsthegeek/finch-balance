@@ -117,10 +117,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: observe every worker result/exception; match balances, successful/failed logical operation counts, and entry cardinality to independently derived expectations. Include a workload of about 1000 operations without requiring 1000 platform threads. Do not assert unmeasured throughput targets.
   - Evidence: MixedWorkloadTest observes all results from single-account and multi-account unique/duplicate batches. The 1000-call batch uses eight threads and 500 original IDs: 400 successful and 100 failed logical outcomes, 700 entries, 800 normal caller returns and 200 INVALID_AMOUNT replays, with independently derived A/B/C totals. Shared concurrency helper now bounds overall batch completion; no throughput assertion. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (49 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T21 — Add and verify balance reconciliation.** Depends on T04, T15.
+- [x] **T21 — Add and verify balance reconciliation.** Depends on T04, T15.
   - Sum successful entry effects by role/type using a wide decimal accumulator, including opening entries. Add the account-history index if justified by the actual query.
   - Tests: reconcile A/B/C and changed accounts after workers finish, exclude failed entries, include both transfer directions, and detect a deliberately inconsistent account fixture. Include lifetime turnover beyond `Long.MAX_VALUE` while valid individual balances remain within range. Compare exact values under a stable view.
-  - Evidence: pending.
+  - Evidence: BalanceReconciler holds the account lock across stored-balance/history reads in READ_COMMITTED, reports exact BigInteger reconstruction and discrepancies, and sums successful effects using DECIMAL(100,0). V3 adds the agreed account/status/created_at index for account-scoped history filtering; prior migrations unchanged. BalanceReconcilerTest covers seed A/B/C, completed concurrent work, both transfer directions, ignored failures, deliberately inconsistent balance, unknown account, and lifetime credits/debits beyond Long.MAX_VALUE. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (51 tests, zero style violations). `git diff --check` passed.
 
 ## Review and delivery
 
