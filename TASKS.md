@@ -43,10 +43,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
 
 ## Behavior and coordination primitives
 
-- [ ] **T07 — Define service contract and request validation.** Depends on T01.
+- [x] **T07 — Define service contract and request validation.** Depends on T01.
   - Add the exact `BalanceService` interface, small immutable internal requests/outcomes, stable business exceptions, and identifier-envelope validation. Keep amount/account-state validation inside the eventual transaction path after duplicate lookup.
   - Tests: null/blank/overlong identifiers rejected; 255-character IDs accepted; IDs are not normalized; every request type retains its fields and failure outcomes preserve stable codes. Avoid trivial getters-only tests.
-  - Evidence: pending.
+  - Evidence: exact BalanceService API, immutable operation envelope/final outcome, BalanceException stable codes, and identifier-only validation added. `RequestValidationTest` covers every identifier position with null/blank/overlong values, 255-character boundaries, unchanged identifiers, deferred invalid amounts/self-transfer, and every failure-code report. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (16 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T08 — Implement safe keyed ReentrantLock leases.** Depends on T01.
   - Implement reference-counted slots covering owners/waiters, atomic slot lifecycle, and owning-thread lease release. Do not block inside map computations or leak one slot per transaction forever.
