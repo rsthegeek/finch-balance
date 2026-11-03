@@ -21,10 +21,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: normal configuration selects file H2; integration tests cannot modify local `data/`; two isolated test databases do not share data. Verify chosen configuration with actual datasource connections, not only string assertions.
   - Evidence: `DatabaseConfigurationTest` passes 2 real-connection tests: normal properties open a file database with WRITE_DELAY=0 in a temporary child-JVM working directory; two independently named in-memory contexts do not share tables. UTC Clock and test profile configured; local database files ignored. Targeted `-Dtest=DatabaseConfigurationTest test`, then `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (3 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T03 — Create tables and constraints with Flyway V1.** Depends on T02.
+- [x] **T03 — Create tables and constraints with Flyway V1.** Depends on T02.
   - Implement the agreed account/entry schema, composite key, ownership, role/type/status checks, and conditional business constraints. Allow unknown-account identifiers in failed entries; no account foreign keys.
   - Tests: real migrations create expected tables; negative balances, duplicate keys, and invalid successful rows are rejected; valid failed invalid-amount/self-transfer/unknown-account records are accepted. Cover null and nonblank failure-code rules.
-  - Evidence: pending.
+  - Evidence: V1 creates exactly the agreed columns and composite key, with ownership, balance, enum, shape, outcome, and successful-transfer checks; no account foreign keys. `SchemaMigrationTest` passed 4 real-migration tests covering duplicate keys/owners, case sensitivity, malformed success rows, null/blank/unknown failure codes, and permitted failed unknown-account/invalid-amount/self-transfer rows. Targeted test, then `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (7 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T04 — Seed accounts and opening history with Flyway V2.** Depends on T03.
   - Seed A/B/C and nonzero opening-credit entries exactly as PLAN.md specifies. Keep applied migrations immutable.
