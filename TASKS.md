@@ -58,10 +58,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: reversed transfer arguments use the same acquisition order, self-transfer acquires once, exceptions release every acquired lease, identical original IDs serialize even for different operation types, and unrelated IDs/accounts progress.
   - Evidence: Separate singleton transaction/account registries and structured OperationLocks enforce original-ID first, sorted distinct accounts, and reverse release. OperationLocksTest verifies both transfer directions, self-transfer deduplication, callback/partial-acquisition cleanup, cross-operation same-ID exclusion, and unrelated progress with bounded real threads. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (22 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T10 — Decode and validate stored outcomes.** Depends on T06, T07.
+- [x] **T10 — Decode and validate stored outcomes.** Depends on T06, T07.
   - Translate complete entry groups into success or the original failure. Accept one SINGLE, a matching successful transfer pair, or one failed SOURCE. Validate pair amounts, accounts/counterparties, type, and status. Do not depend on query row order or incoming retry payloads.
   - Tests: each valid group decodes; reversed pair order works; incomplete destination-only/source-success groups, mismatched pairs, and mixed SINGLE/transfer groups produce integrity errors. They must never trigger new execution.
-  - Evidence: pending.
+  - Evidence: StoredOutcomes decodes valid SINGLE successes/failures, failed transfer SOURCE, and matching successful pairs independent of row order and retry payload. StoredOutcomesTest rejects incomplete, mixed, mismatched amounts/accounts/counterparties/types/statuses/IDs/timestamps and invalid row shapes with HistoryIntegrityException; no execution path exists in the decoder. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (24 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T11 — Implement exact balance calculations and business checks.** Depends on T07.
   - Implement deterministic validation ordering and overflow-safe credit/debit/transfer calculations without mutating entities before all checks pass.
