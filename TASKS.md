@@ -107,10 +107,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: bounded completion, correct outcome counts, exact expected balances, and conserved funds. While A is deliberately blocked, a distinct transaction on B completes before A is released. Verify a blocked duplicate does not prevent unrelated work.
   - Evidence: ConcurrentProgressTest completes 200 opposing and 300 overlapping unique transfers with bounded callers, exact expected balances/entry counts, and conserved funds. A deliberate A lock blocks a request and its same-ID duplicate while a distinct B operation commits before A is released; all futures are observed and registries clean up. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (46 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T19 — Prove restart durability and retention.** Depends on T16, T17.
+- [x] **T19 — Prove restart durability and retention.** Depends on T16, T17.
   - Run real service contexts sequentially against the same temporary file-backed H2 database. Close the first context/pool completely; the second uses fresh lock registries.
   - Tests: successful credit/debit/transfer and business-failure replay after restart; balances/history are unchanged by duplicates; seeds are not reset. Advance the injected Clock beyond 72 hours and confirm replay still works. Confirm unexpected rolled-back attempts have no fabricated final outcome.
-  - Evidence: pending.
+  - Evidence: RestartDurabilityTest closes the first context and confirms Hikari pool closure before reopening the same temporary file database with fresh registries and Clock +96 hours. Credit/debit/transfer successes and failed transfer/debit outcomes replay unchanged after funding; full detached history and exact balances match, seeds are retained, and a flushed rolled-back attempt has no outcome and can execute after restart. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (47 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T20 — Verify mixed concurrent workloads.** Depends on T16, T18.
   - Add bounded batches of unique/duplicate operations on one and multiple accounts. Use sufficient funds for cases needing order-independent exact totals; keep insufficient-funds races separately specified.
