@@ -80,10 +80,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: credit changes balance and appends exactly one correct entry; invalid amount/unknown account/overflow persist final failures without balance changes; getBalance returns the committed value and rejects unknown accounts; sequential credit duplicates replay without new entries.
   - Evidence: Credit and account-locked balance reads are wired through the shared coordinator with injected Clock timestamps. CreditServiceTest verifies exact SINGLE contents, changed-payload success/failure replay, invalid-amount/unknown-account/overflow persistence without balance changes, committed reads, malformed envelopes without history, and ambient-read rejection. Debit/transfer remain explicit T14/T15 stubs in this commit. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (34 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T14 — Implement debit.** Depends on T13.
+- [x] **T14 — Implement debit.** Depends on T13.
   - Wire debit success/rejection and SINGLE history through the shared coordinator.
   - Tests: normal/exact-balance debit, insufficient funds, invalid amount, unknown account, sequential duplicates, and failure replay after later funding. Two gated concurrent unique debits of 700 from 1000 yield one success, one final failure, balance 300, and two logical outcomes.
-  - Evidence: pending.
+  - Evidence: Debit uses the shared single-entry path. DebitServiceTest checks exact history, normal/exact-balance debit, changed-payload and cross-operation success replay, invalid amounts, unknown accounts, final insufficient-funds replay after funding, and a two-caller gated 700-from-1000 race yielding one success, one persisted failure, and balance 300. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (37 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T15 — Implement atomic transfer.** Depends on T14.
   - Wire two successful entries with reciprocal counterparties/equal amounts/shared Instant, or only one failed source entry preserving the intended destination. Commit both balances and entries together.

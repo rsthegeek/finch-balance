@@ -20,12 +20,13 @@ class JpaBalanceService implements BalanceService {
   public void credit(String accountId, long amount, String transactionId) {
     var request =
         new OperationRequest(OperationType.CREDIT, accountId, null, amount, transactionId);
-    coordinator.execute(request, () -> applyCredit(request));
+    coordinator.execute(request, () -> applySingle(request));
   }
 
   @Override
   public void debit(String accountId, long amount, String transactionId) {
-    throw new UnsupportedOperationException("Debit is not implemented yet (T14)");
+    var request = new OperationRequest(OperationType.DEBIT, accountId, null, amount, transactionId);
+    coordinator.execute(request, () -> applySingle(request));
   }
 
   @Override
@@ -39,7 +40,7 @@ class JpaBalanceService implements BalanceService {
     return coordinator.getBalance(accountId);
   }
 
-  private OperationOutcome applyCredit(OperationRequest request) {
+  private OperationOutcome applySingle(OperationRequest request) {
     Account account = store.findAccount(request.accountId());
     BalanceChange change = BalanceChange.calculate(request, account, null);
     if (change.failureCode() == null) {
