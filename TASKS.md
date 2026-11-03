@@ -31,10 +31,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: exact seeded ownership/balances/history; zero-balance C has no invalid zero credit; close/reopen a temporary file database and rerun migrations without duplicates or resetting a changed balance. Commit fixture changes before closing.
   - Evidence: V2 seeds A/B/C ownership and balances plus exactly two positive opening SINGLE credits. `SeedMigrationTest` passed exact seed/history checks and a sequential temporary-file restart after a committed balance change; V1/V2 each applied once without reseeding. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (9 tests, zero style violations). `git diff --check` passed; V1 unchanged.
 
-- [ ] **T05 — Map JPA entities and composite identity.** Depends on T03.
+- [x] **T05 — Map JPA entities and composite identity.** Depends on T03.
   - Add `Account`, `TransactionEntry`, embedded entry identity, and string-mapped role/type/status/failure-code enums. Scalar account identifiers; JPA-compatible constructors; no optimistic version field. Preserve the schema.
   - Tests: persist/flush/clear/reload every valid entry form, null counterparty/failure-code behavior, timestamp instant preservation, composite-ID equality/hash behavior, and mapping validation against real migrations.
-  - Evidence: pending.
+  - Evidence: explicit JPA field mappings validate against unchanged V1/V2; enums use VARCHAR strings, history is immutable with no setters, and scalar account IDs permit unknown-account failures. `JpaMappingTest` passed all valid forms through persist/flush/clear and fresh-context reload, null fields, microsecond Instant round trips, account ownership/boundary balance, and composite-ID hash collection behavior. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (11 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T06 — Implement focused JPA persistence operations.** Depends on T05.
   - Add account lookup and original-transaction-ID entry lookup plus explicit append-only entry persistence. Managed account changes use dirty tracking. Avoid save/merge overwriting caller-assigned history IDs.
