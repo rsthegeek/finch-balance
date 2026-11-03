@@ -75,10 +75,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: real transaction boundaries commit final business failures, roll back unexpected exceptions, and reject ambient transactions before writes. Assert entry/balance state after transaction completion, not only callback invocation. Keep any shared executor abstraction small.
   - Evidence: OperationCoordinator rejects ambient transactions, checks stored groups before invoking new work, and holds structured leases around READ_COMMITTED TransactionTemplate completion with the JPA manager. OperationCoordinatorTest observes committed failure before public exception reporting, cross-type replay, actual post-flush rollback, ambient rejection without writes, and corrupt-group rejection without reexecution in fresh transactions. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (31 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T13 — Implement credit and getBalance.** Depends on T04, T12.
+- [x] **T13 — Implement credit and getBalance.** Depends on T04, T12.
   - Wire the public credit path, successful/failed SINGLE entries, and account-locked balance reads. Sample creation instants from injected Clock.
   - Tests: credit changes balance and appends exactly one correct entry; invalid amount/unknown account/overflow persist final failures without balance changes; getBalance returns the committed value and rejects unknown accounts; sequential credit duplicates replay without new entries.
-  - Evidence: pending.
+  - Evidence: Credit and account-locked balance reads are wired through the shared coordinator with injected Clock timestamps. CreditServiceTest verifies exact SINGLE contents, changed-payload success/failure replay, invalid-amount/unknown-account/overflow persistence without balance changes, committed reads, malformed envelopes without history, and ambient-read rejection. Debit/transfer remain explicit T14/T15 stubs in this commit. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (34 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T14 — Implement debit.** Depends on T13.
   - Wire debit success/rejection and SINGLE history through the shared coordinator.

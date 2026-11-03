@@ -48,6 +48,22 @@ class OperationCoordinator {
     Objects.requireNonNull(outcome).report();
   }
 
+  long getBalance(String accountId) {
+    Identifiers.requireValid(accountId);
+    rejectAmbientTransaction();
+    return locks.withAccountLock(
+        accountId,
+        () ->
+            transaction.execute(
+                status -> {
+                  Account account = store.findAccount(accountId);
+                  if (account == null) {
+                    throw new BalanceException(FailureCode.ACCOUNT_NOT_FOUND);
+                  }
+                  return account.balance();
+                }));
+  }
+
   static void rejectAmbientTransaction() {
     if (TransactionSynchronizationManager.isActualTransactionActive()) {
       throw new IllegalStateException("Balance operations cannot join an ambient transaction");
