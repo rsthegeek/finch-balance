@@ -92,10 +92,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
 
 ## Adversarial integration tests
 
-- [ ] **T16 — Prove concurrent original-ID idempotency.** Depends on T15.
+- [x] **T16 — Prove concurrent original-ID idempotency.** Depends on T15.
   - Test concurrent duplicates for credit, debit, successful transfer, and failed transfer, including a replay after account state changes.
   - Tests: exactly one SINGLE/two successful transfer rows/one failed transfer SOURCE as appropriate; every caller observes the recorded outcome. Race credit versus transfer with the same original ID and prove only one role group commits, accepting either scheduling winner. No payload comparison or forced winner.
-  - Evidence: pending.
+  - Evidence: ConcurrentIdempotencyTest coordinates real callers for credit/debit/successful-transfer/failed-transfer duplicates and repeats a stored failure after funding. Every caller result is observed; exact balances and entry cardinalities are asserted. A gated credit-versus-transfer original-ID race accepts either scheduling winner and proves only its complete role group commits, with registry cleanup. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (42 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T17 — Prove rollback and lock-through-commit behavior.** Depends on T15.
   - Add controlled faults around actual persistence collaborators and a controlled transaction-completion observer. Keep fault hooks in test wiring rather than the public service API.
