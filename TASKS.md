@@ -102,10 +102,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: force a flush of the first account change, then fail; separately fail while inserting transfer entries. Real rollback restores both balances and removes all attempted entries. A conflicting request cannot pass account locking before commit/rollback finishes. Verify cleanup and read final state in a new persistence context.
   - Evidence: Test-only PersistenceFaults wraps real managed collaborators. RollbackAndCommitLockTest proves a flushed first account change and separately a flushed first transfer entry are rolled back with no fabricated outcome, then same-ID retry succeeds. Completion observers cover commit and a before-commit fault/rollback; conflicting writes and getBalance stay parked on account locking until completion is released. Fresh transactions verify exact balances/history and empty lock registries. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (44 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T18 — Prove deadlock avoidance and independent progress.** Depends on T15.
+- [x] **T18 — Prove deadlock avoidance and independent progress.** Depends on T15.
   - Exercise opposing and overlapping transfers plus operations on distinct accounts with shared real lock registries.
   - Tests: bounded completion, correct outcome counts, exact expected balances, and conserved funds. While A is deliberately blocked, a distinct transaction on B completes before A is released. Verify a blocked duplicate does not prevent unrelated work.
-  - Evidence: pending.
+  - Evidence: ConcurrentProgressTest completes 200 opposing and 300 overlapping unique transfers with bounded callers, exact expected balances/entry counts, and conserved funds. A deliberate A lock blocks a request and its same-ID duplicate while a distinct B operation commits before A is released; all futures are observed and registries clean up. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (46 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T19 — Prove restart durability and retention.** Depends on T16, T17.
   - Run real service contexts sequentially against the same temporary file-backed H2 database. Close the first context/pool completely; the second uses fresh lock registries.
