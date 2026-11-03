@@ -4,7 +4,7 @@
 
 Implement the concurrent balance-service challenge with a small, readable design. Correctness, idempotency, atomic transfers, useful tests, and explainable trade-offs take priority over extra features.
 
-The initial Spring Boot project exists and its starter test/build passed. Domain operations, entities, migrations, lock coordination, formatting enforcement, and behavioral tests have not been implemented yet. Use [TASKS.md](TASKS.md) for execution order and progress, and [AGENTS.md](AGENTS.md) for instructions applying to every Codex session.
+The project began as a Spring Boot scaffold. Implementation and verified evidence are tracked task by task in TASKS.md; this plan describes the accepted target behavior. Use [TASKS.md](TASKS.md) for execution order and progress, and [AGENTS.md](AGENTS.md) for instructions applying to every Codex session.
 
 ## Selected stack and scope
 

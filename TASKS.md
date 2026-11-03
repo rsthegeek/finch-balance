@@ -16,10 +16,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Verification: clean `./mvnw verify`; temporarily introduce a formatting violation in an isolated working copy and prove the check fails, then restore it. Similarly verify a selected non-formatting Checkstyle violation is rejected. Do not commit intentionally broken source or suppress violations.
   - Evidence: Spotless 3.10.3 / Google Java Format 1.30.0 and Checkstyle plugin 3.6.0 / engine 10.26.1 pinned. `./mvnw --batch-mode --no-transfer-progress spotless:apply verify` and `./mvnw --offline --batch-mode --no-transfer-progress clean verify` passed (1 test, no style violations). Isolated temporary-copy `verify` rejected an indentation violation via Spotless and a formatted test-source `bad_name` member via Checkstyle at warning severity; both probes restored. `git diff --check` passed.
 
-- [ ] **T02 — Configure persistent H2 and test isolation.** Depends on T01.
+- [x] **T02 — Configure persistent H2 and test isolation.** Depends on T01.
   - Add the properties from PLAN.md, a test configuration using distinct named in-memory databases, UTC `Clock`, and database-file ignore rules. Flyway is the sole initializer; Hibernate validates schema.
   - Tests: normal configuration selects file H2; integration tests cannot modify local `data/`; two isolated test databases do not share data. Verify chosen configuration with actual datasource connections, not only string assertions.
-  - Evidence: pending.
+  - Evidence: `DatabaseConfigurationTest` passes 2 real-connection tests: normal properties open a file database with WRITE_DELAY=0 in a temporary child-JVM working directory; two independently named in-memory contexts do not share tables. UTC Clock and test profile configured; local database files ignored. Targeted `-Dtest=DatabaseConfigurationTest test`, then `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (3 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T03 — Create tables and constraints with Flyway V1.** Depends on T02.
   - Implement the agreed account/entry schema, composite key, ownership, role/type/status checks, and conditional business constraints. Allow unknown-account identifiers in failed entries; no account foreign keys.
