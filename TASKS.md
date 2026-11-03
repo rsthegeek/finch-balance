@@ -63,10 +63,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: each valid group decodes; reversed pair order works; incomplete destination-only/source-success groups, mismatched pairs, and mixed SINGLE/transfer groups produce integrity errors. They must never trigger new execution.
   - Evidence: StoredOutcomes decodes valid SINGLE successes/failures, failed transfer SOURCE, and matching successful pairs independent of row order and retry payload. StoredOutcomesTest rejects incomplete, mixed, mismatched amounts/accounts/counterparties/types/statuses/IDs/timestamps and invalid row shapes with HistoryIntegrityException; no execution path exists in the decoder. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (24 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T11 — Implement exact balance calculations and business checks.** Depends on T07.
+- [x] **T11 — Implement exact balance calculations and business checks.** Depends on T07.
   - Implement deterministic validation ordering and overflow-safe credit/debit/transfer calculations without mutating entities before all checks pass.
   - Tests: zero/negative amounts including `Long.MIN_VALUE`, debit exactly equal to balance, insufficient funds, unknown source/destination ordering, same-account transfer, `Long.MAX_VALUE` boundary, and destination overflow. Assert original state remains unchanged on rejection.
-  - Evidence: pending.
+  - Evidence: BalanceChange calculates both final balances before mutation using validated subtraction and Math.addExact. BalanceChangeTest covers deterministic amount/self-transfer/existence/funds/overflow ordering, Long.MIN_VALUE attempted amounts, exact-balance debit, Long.MAX_VALUE success boundaries, destination overflow, and unchanged original accounts. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (28 tests, zero style violations). `git diff --check` passed.
 
 ## Service implementation
 
