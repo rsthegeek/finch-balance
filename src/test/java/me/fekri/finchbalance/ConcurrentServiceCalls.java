@@ -38,9 +38,10 @@ final class ConcurrentServiceCalls {
       }
       await(ready);
       start.countDown();
+      final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(30);
       var outcomes = new ArrayList<FailureCode>();
       for (var future : futures) {
-        outcomes.add(future.get(30, TimeUnit.SECONDS));
+        outcomes.add(future.get(Math.max(1, deadline - System.nanoTime()), TimeUnit.NANOSECONDS));
       }
       return outcomes;
     } finally {

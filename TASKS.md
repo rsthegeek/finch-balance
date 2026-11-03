@@ -112,10 +112,10 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
   - Tests: successful credit/debit/transfer and business-failure replay after restart; balances/history are unchanged by duplicates; seeds are not reset. Advance the injected Clock beyond 72 hours and confirm replay still works. Confirm unexpected rolled-back attempts have no fabricated final outcome.
   - Evidence: RestartDurabilityTest closes the first context and confirms Hikari pool closure before reopening the same temporary file database with fresh registries and Clock +96 hours. Credit/debit/transfer successes and failed transfer/debit outcomes replay unchanged after funding; full detached history and exact balances match, seeds are retained, and a flushed rolled-back attempt has no outcome and can execute after restart. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (47 tests, zero style violations). `git diff --check` passed.
 
-- [ ] **T20 — Verify mixed concurrent workloads.** Depends on T16, T18.
+- [x] **T20 — Verify mixed concurrent workloads.** Depends on T16, T18.
   - Add bounded batches of unique/duplicate operations on one and multiple accounts. Use sufficient funds for cases needing order-independent exact totals; keep insufficient-funds races separately specified.
   - Tests: observe every worker result/exception; match balances, successful/failed logical operation counts, and entry cardinality to independently derived expectations. Include a workload of about 1000 operations without requiring 1000 platform threads. Do not assert unmeasured throughput targets.
-  - Evidence: pending.
+  - Evidence: MixedWorkloadTest observes all results from single-account and multi-account unique/duplicate batches. The 1000-call batch uses eight threads and 500 original IDs: 400 successful and 100 failed logical outcomes, 700 entries, 800 normal caller returns and 200 INVALID_AMOUNT replays, with independently derived A/B/C totals. Shared concurrency helper now bounds overall batch completion; no throughput assertion. Targeted tests and `./mvnw --offline --batch-mode --no-transfer-progress spotless:apply verify` passed (49 tests, zero style violations). `git diff --check` passed.
 
 - [ ] **T21 — Add and verify balance reconciliation.** Depends on T04, T15.
   - Sum successful entry effects by role/type using a wide decimal accumulator, including opening entries. Add the account-history index if justified by the actual query.
