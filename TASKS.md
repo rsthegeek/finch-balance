@@ -1,0 +1,140 @@
+# Finchbalance task checklist
+
+Read [AGENTS.md](AGENTS.md) and [PLAN.md](PLAN.md) before implementation. Work in dependency order, selecting the next unchecked task unless the owner specifies another. Each task includes its own behavior tests; later integration tasks extend coverage rather than replacing earlier tests. Do not mark a task done merely because classes exist or mocked calls match expectations.
+
+After a task, record its tests/commands and outcome under its evidence line. Prefer one coherent task per reviewable change. Documentation-only work uses content/link/command verification rather than artificial unit tests for prose. Checkboxes below describe current progress, not future intent.
+
+## Starting point
+
+- [x] **T00 — Initial Spring Boot project.** Java 25, Spring Boot 4.0.9, Maven Wrapper, JAR, properties configuration, JPA, H2, Flyway, and starter test dependencies.
+  - Evidence: initial commit `2805197`; `./mvnw --batch-mode --no-transfer-progress verify` passed with one application-context test. No domain features are complete.
+
+## Build and persistence foundation
+
+- [ ] **T01 — Enforce Google Java Style.** Depends on T00.
+  - Add pinned Java-25-compatible Spotless/Google formatter and Google Checkstyle enforcement for production and test Java. Bind checks into `verify`; fail Checkstyle on warnings. Format the existing starter sources.
+  - Verification: clean `./mvnw verify`; temporarily introduce a formatting violation in an isolated working copy and prove the check fails, then restore it. Similarly verify a selected non-formatting Checkstyle violation is rejected. Do not commit intentionally broken source or suppress violations.
+  - Evidence: pending.
+
+- [ ] **T02 — Configure persistent H2 and test isolation.** Depends on T01.
+  - Add the properties from PLAN.md, a test configuration using distinct named in-memory databases, UTC `Clock`, and database-file ignore rules. Flyway is the sole initializer; Hibernate validates schema.
+  - Tests: normal configuration selects file H2; integration tests cannot modify local `data/`; two isolated test databases do not share data. Verify chosen configuration with actual datasource connections, not only string assertions.
+  - Evidence: pending.
+
+- [ ] **T03 — Create tables and constraints with Flyway V1.** Depends on T02.
+  - Implement the agreed account/entry schema, composite key, ownership, role/type/status checks, and conditional business constraints. Allow unknown-account identifiers in failed entries; no account foreign keys.
+  - Tests: real migrations create expected tables; negative balances, duplicate keys, and invalid successful rows are rejected; valid failed invalid-amount/self-transfer/unknown-account records are accepted. Cover null and nonblank failure-code rules.
+  - Evidence: pending.
+
+- [ ] **T04 — Seed accounts and opening history with Flyway V2.** Depends on T03.
+  - Seed A/B/C and nonzero opening-credit entries exactly as PLAN.md specifies. Keep applied migrations immutable.
+  - Tests: exact seeded ownership/balances/history; zero-balance C has no invalid zero credit; close/reopen a temporary file database and rerun migrations without duplicates or resetting a changed balance. Commit fixture changes before closing.
+  - Evidence: pending.
+
+- [ ] **T05 — Map JPA entities and composite identity.** Depends on T03.
+  - Add `Account`, `TransactionEntry`, embedded entry identity, and string-mapped role/type/status/failure-code enums. Scalar account identifiers; JPA-compatible constructors; no optimistic version field. Preserve the schema.
+  - Tests: persist/flush/clear/reload every valid entry form, null counterparty/failure-code behavior, timestamp instant preservation, composite-ID equality/hash behavior, and mapping validation against real migrations.
+  - Evidence: pending.
+
+- [ ] **T06 — Implement focused JPA persistence operations.** Depends on T05.
+  - Add account lookup and original-transaction-ID entry lookup plus explicit append-only entry persistence. Managed account changes use dirty tracking. Avoid save/merge overwriting caller-assigned history IDs.
+  - Tests: real committed lookup/update round trips; all entries for one original ID are found; unrelated IDs are excluded; attempted duplicate append fails and cannot overwrite original history. Read assertions using a fresh persistence context.
+  - Evidence: pending.
+
+## Behavior and coordination primitives
+
+- [ ] **T07 — Define service contract and request validation.** Depends on T01.
+  - Add the exact `BalanceService` interface, small immutable internal requests/outcomes, stable business exceptions, and identifier-envelope validation. Keep amount/account-state validation inside the eventual transaction path after duplicate lookup.
+  - Tests: null/blank/overlong identifiers rejected; 255-character IDs accepted; IDs are not normalized; every request type retains its fields and failure outcomes preserve stable codes. Avoid trivial getters-only tests.
+  - Evidence: pending.
+
+- [ ] **T08 — Implement safe keyed ReentrantLock leases.** Depends on T01.
+  - Implement reference-counted slots covering owners/waiters, atomic slot lifecycle, and owning-thread lease release. Do not block inside map computations or leak one slot per transaction forever.
+  - Tests: same-key mutual exclusion, distinct-key progress, queued waiter handoff, cleanup after normal/exceptional callback execution, and acquire/release/reacquire interleavings. Coordinate real threads; assertions must detect overlapping critical sections. Verify safe cleanup while a waiter exists.
+  - Evidence: pending.
+
+- [ ] **T09 — Implement ordered lock acquisition.** Depends on T07, T08.
+  - Wire separate shared transaction/account registries. Acquire original-ID first, then distinct accounts sorted consistently; release in reverse order with structured cleanup. Handle self-transfer by deduplication.
+  - Tests: reversed transfer arguments use the same acquisition order, self-transfer acquires once, exceptions release every acquired lease, identical original IDs serialize even for different operation types, and unrelated IDs/accounts progress.
+  - Evidence: pending.
+
+- [ ] **T10 — Decode and validate stored outcomes.** Depends on T06, T07.
+  - Translate complete entry groups into success or the original failure. Accept one SINGLE, a matching successful transfer pair, or one failed SOURCE. Validate pair amounts, accounts/counterparties, type, and status. Do not depend on query row order or incoming retry payloads.
+  - Tests: each valid group decodes; reversed pair order works; incomplete destination-only/source-success groups, mismatched pairs, and mixed SINGLE/transfer groups produce integrity errors. They must never trigger new execution.
+  - Evidence: pending.
+
+- [ ] **T11 — Implement exact balance calculations and business checks.** Depends on T07.
+  - Implement deterministic validation ordering and overflow-safe credit/debit/transfer calculations without mutating entities before all checks pass.
+  - Tests: zero/negative amounts including `Long.MIN_VALUE`, debit exactly equal to balance, insufficient funds, unknown source/destination ordering, same-account transfer, `Long.MAX_VALUE` boundary, and destination overflow. Assert original state remains unchanged on rejection.
+  - Evidence: pending.
+
+## Service implementation
+
+- [ ] **T12 — Connect Java locks to a fresh JPA transaction.** Depends on T06, T09, T10, T11.
+  - Use `TransactionTemplate`/JPA transaction manager with READ_COMMITTED. Reject ambient transactions. Hold leases through actual commit/rollback; duplicate lookup precedes business validation. Return recorded business outcomes from the callback before public exception translation.
+  - Tests: real transaction boundaries commit final business failures, roll back unexpected exceptions, and reject ambient transactions before writes. Assert entry/balance state after transaction completion, not only callback invocation. Keep any shared executor abstraction small.
+  - Evidence: pending.
+
+- [ ] **T13 — Implement credit and getBalance.** Depends on T04, T12.
+  - Wire the public credit path, successful/failed SINGLE entries, and account-locked balance reads. Sample creation instants from injected Clock.
+  - Tests: credit changes balance and appends exactly one correct entry; invalid amount/unknown account/overflow persist final failures without balance changes; getBalance returns the committed value and rejects unknown accounts; sequential credit duplicates replay without new entries.
+  - Evidence: pending.
+
+- [ ] **T14 — Implement debit.** Depends on T13.
+  - Wire debit success/rejection and SINGLE history through the shared coordinator.
+  - Tests: normal/exact-balance debit, insufficient funds, invalid amount, unknown account, sequential duplicates, and failure replay after later funding. Two gated concurrent unique debits of 700 from 1000 yield one success, one final failure, balance 300, and two logical outcomes.
+  - Evidence: pending.
+
+- [ ] **T15 — Implement atomic transfer.** Depends on T14.
+  - Wire two successful entries with reciprocal counterparties/equal amounts/shared Instant, or only one failed source entry preserving the intended destination. Commit both balances and entries together.
+  - Tests: success and duplicate effects; unknown source/destination; insufficient funds; self-transfer; invalid amount; destination overflow. Assert exact balances, roles, counterparties, statuses, timestamps, and row counts; every business failure leaves both balances unchanged.
+  - Evidence: pending.
+
+## Adversarial integration tests
+
+- [ ] **T16 — Prove concurrent original-ID idempotency.** Depends on T15.
+  - Test concurrent duplicates for credit, debit, successful transfer, and failed transfer, including a replay after account state changes.
+  - Tests: exactly one SINGLE/two successful transfer rows/one failed transfer SOURCE as appropriate; every caller observes the recorded outcome. Race credit versus transfer with the same original ID and prove only one role group commits, accepting either scheduling winner. No payload comparison or forced winner.
+  - Evidence: pending.
+
+- [ ] **T17 — Prove rollback and lock-through-commit behavior.** Depends on T15.
+  - Add controlled faults around actual persistence collaborators and a controlled transaction-completion observer. Keep fault hooks in test wiring rather than the public service API.
+  - Tests: force a flush of the first account change, then fail; separately fail while inserting transfer entries. Real rollback restores both balances and removes all attempted entries. A conflicting request cannot pass account locking before commit/rollback finishes. Verify cleanup and read final state in a new persistence context.
+  - Evidence: pending.
+
+- [ ] **T18 — Prove deadlock avoidance and independent progress.** Depends on T15.
+  - Exercise opposing and overlapping transfers plus operations on distinct accounts with shared real lock registries.
+  - Tests: bounded completion, correct outcome counts, exact expected balances, and conserved funds. While A is deliberately blocked, a distinct transaction on B completes before A is released. Verify a blocked duplicate does not prevent unrelated work.
+  - Evidence: pending.
+
+- [ ] **T19 — Prove restart durability and retention.** Depends on T16, T17.
+  - Run real service contexts sequentially against the same temporary file-backed H2 database. Close the first context/pool completely; the second uses fresh lock registries.
+  - Tests: successful credit/debit/transfer and business-failure replay after restart; balances/history are unchanged by duplicates; seeds are not reset. Advance the injected Clock beyond 72 hours and confirm replay still works. Confirm unexpected rolled-back attempts have no fabricated final outcome.
+  - Evidence: pending.
+
+- [ ] **T20 — Verify mixed concurrent workloads.** Depends on T16, T18.
+  - Add bounded batches of unique/duplicate operations on one and multiple accounts. Use sufficient funds for cases needing order-independent exact totals; keep insufficient-funds races separately specified.
+  - Tests: observe every worker result/exception; match balances, successful/failed logical operation counts, and entry cardinality to independently derived expectations. Include a workload of about 1000 operations without requiring 1000 platform threads. Do not assert unmeasured throughput targets.
+  - Evidence: pending.
+
+- [ ] **T21 — Add and verify balance reconciliation.** Depends on T04, T15.
+  - Sum successful entry effects by role/type using a wide decimal accumulator, including opening entries. Add the account-history index if justified by the actual query.
+  - Tests: reconcile A/B/C and changed accounts after workers finish, exclude failed entries, include both transfer directions, and detect a deliberately inconsistent account fixture. Include lifetime turnover beyond `Long.MAX_VALUE` while valid individual balances remain within range. Compare exact values under a stable view.
+  - Evidence: pending.
+
+## Review and delivery
+
+- [ ] **T22 — Write the submission README and audit completion.** Depends on T19, T20, T21.
+  - Document actual run/test commands, Java 25 selection, API usage, schema/seed data, lock order, database commit boundary, replay/failure semantics, single-JVM scope, retention/storage cost, and migration limitations. Explain AI-assisted work in terms the owner can defend; invent no performance results.
+  - Verification: execute documented build commands from a clean checkout; all behavior tests and style checks pass under `./mvnw verify`; confirm JAR packaging and clean tracked outputs. Review every task's evidence against its acceptance tests and reconcile README claims with implementation. Do not add a dummy test just for README prose.
+  - Evidence: pending.
+
+## Test discipline for every task
+
+- Production behavior and its tests belong in the same task; do not defer all meaningful tests to T16-T21.
+- Write tests that would fail for the plausible bug: duplicate effects, missing entry, stale read, partial commit, failure accidentally rolled back, early unlock, or lock-slot split.
+- Prefer observable state to private-method or invocation-count assertions. Use real H2 for mappings, constraints, commit/rollback, migration, and restart semantics.
+- Use committed fixtures, isolated databases, fresh persistence contexts for final assertions, and no enclosing test transaction for concurrent/restart/commit tests.
+- Use latches/barriers for controlled scheduling, bounded futures and executor cleanup. No arbitrary sleeps. A barrier needing more parties than the executor can run can deadlock the test.
+- Run targeted tests while editing, then `./mvnw spotless:apply` and `./mvnw verify` once tooling exists. Do not disable, suppress, or skip checks to finish a task.
+- Record exact verification results and limitations. Do not check off work whose required tests failed or could not run.
