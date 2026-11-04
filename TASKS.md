@@ -6,13 +6,13 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
 
 ## Starting point
 
-- [x] **T00 — Initial Spring Boot project.** Java 25, Spring Boot 4.0.9, Maven Wrapper, JAR, properties configuration, JPA, H2, Flyway, and starter test dependencies.
+- [x] **T00 — Initial Spring Boot project.** Spring Boot 4.0.9, Maven Wrapper, JAR, properties configuration, JPA, H2, Flyway, and starter test dependencies.
   - Evidence: initial commit `2805197`; `./mvnw --batch-mode --no-transfer-progress verify` passed with one application-context test. No domain features are complete.
 
 ## Build and persistence foundation
 
 - [x] **T01 — Enforce Google Java Style.** Depends on T00.
-  - Add pinned Java-25-compatible Spotless/Google formatter and Google Checkstyle enforcement for production and test Java. Bind checks into `verify`; fail Checkstyle on warnings. Format the existing starter sources.
+  - Add pinned Java-21-compatible Spotless/Google formatter and Google Checkstyle enforcement for production and test Java. Bind checks into `verify`; fail Checkstyle on warnings. Format the existing starter sources.
   - Verification: clean `./mvnw verify`; temporarily introduce a formatting violation in an isolated working copy and prove the check fails, then restore it. Similarly verify a selected non-formatting Checkstyle violation is rejected. Do not commit intentionally broken source or suppress violations.
   - Evidence: Spotless 3.10.3 / Google Java Format 1.30.0 and Checkstyle plugin 3.6.0 / engine 10.26.1 pinned. `./mvnw --batch-mode --no-transfer-progress spotless:apply verify` and `./mvnw --offline --batch-mode --no-transfer-progress clean verify` passed (1 test, no style violations). Isolated temporary-copy `verify` rejected an indentation violation via Spotless and a formatted test-source `bad_name` member via Checkstyle at warning severity; both probes restored. `git diff --check` passed.
 
@@ -125,9 +125,14 @@ After a task, record its tests/commands and outcome under its evidence line. Pre
 ## Review and delivery
 
 - [x] **T22 — Write the submission README and audit completion.** Depends on T19, T20, T21.
-  - Document actual run/test commands, Java 25 selection, API usage, schema/seed data, lock order, database commit boundary, replay/failure semantics, single-JVM scope, retention/storage cost, and migration limitations. Explain AI-assisted work in terms the owner can defend; invent no performance results.
+  - Document actual run/test commands, Java runtime requirements, API usage, schema/seed data, lock order, database commit boundary, replay/failure semantics, single-JVM scope, retention/storage cost, and migration limitations. Explain AI-assisted work in terms the owner can defend; invent no performance results.
   - Verification: execute documented build commands from a clean checkout; all behavior tests and style checks pass under `./mvnw verify`; confirm JAR packaging and clean tracked outputs. Review every task's evidence against its acceptance tests and reconcile README claims with implementation. Do not add a dummy test just for README prose.
-  - Evidence: README documents the implemented API, Java 25 choice, exact schema/seeds, lock/commit and replay semantics, single-JVM scope, retention, reconciliation, migration limits, and AI-assisted review path. Clean local checkout at code commit `050af64` passed the exact documented `./mvnw clean verify`, `./mvnw spotless:apply`, and `./mvnw verify` commands (51 tests, no failures/errors/skips, zero style violations). Executable JAR manifest/migration contents and normal startup/file creation verified only in the temporary checkout. The exact README Java example compiled and ran twice in a separate temporary working directory, printing 1250 both times. Every prior task evidence/acceptance test was audited; local document links, clean checkout outputs, unchanged prior migrations, no tracked build/database files, and `git diff --check` passed. No blocked requirements; final changes are documentation only.
+  - Evidence: README documents the implemented API, Java runtime requirements, exact schema/seeds, lock/commit and replay semantics, single-JVM scope, retention, reconciliation, migration limits, and AI-assisted review path. Clean local checkout at code commit `050af64` passed the exact documented `./mvnw clean verify`, `./mvnw spotless:apply`, and `./mvnw verify` commands (51 tests, no failures/errors/skips, zero style violations). Executable JAR manifest/migration contents and normal startup/file creation verified only in the temporary checkout. The exact README Java example compiled and ran twice in a separate temporary working directory, printing 1250 both times. Every prior task evidence/acceptance test was audited; local document links, clean checkout outputs, unchanged prior migrations, no tracked build/database files, and `git diff --check` passed. No blocked requirements; final changes are documentation only.
+
+- [x] **T23 — Switch the runtime baseline to Java 21.** Depends on T22.
+  - Set the Maven Java release to 21 and align all Markdown runtime requirements and Java API links.
+  - Verification: run Spotless and a clean full `verify` on JDK 21 without a Java-version override; check compiled bytecode and executable JAR startup using a temporary database. Check Markdown consistency and `git diff --check`.
+  - Evidence: JDK 21.0.8 ran `./mvnw --offline --batch-mode --no-transfer-progress -Daether.syncContext.named.factory=rwlock-local spotless:apply clean verify` without a Java-version override (51 tests, no failures/errors/skips, zero style violations). All 27 packaged application classes use Java 21 bytecode (major version 65). The executable JAR started successfully on JDK 21 and created its normal file-backed database only in a temporary working directory. All four Markdown files have consistent runtime references and valid local links; `git diff --check` passed.
 
 ## Test discipline for every task
 

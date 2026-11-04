@@ -12,7 +12,7 @@ The project began as a Spring Boot scaffold. Implementation and verified evidenc
 | --- | --- |
 | Coordinates | `me.fekri:finchbalance` |
 | Base package | `me.fekri.finchbalance` |
-| Runtime | Java 25, explicitly selected by the project owner |
+| Runtime | Java 21 |
 | Framework | Spring Boot 4.0.9 |
 | Build | Maven Wrapper; executable JAR |
 | Configuration | `.properties` files |
@@ -23,7 +23,7 @@ The project began as a Spring Boot scaffold. Implementation and verified evidenc
 | Database transactions | `TransactionTemplate` using the JPA transaction manager |
 | Style | Google Java Style for production and test Java |
 
-Java 25 is the owner's explicit change from the original challenge's Java 21 requirement; document it in the submission README. Preserve Java 25 unless the owner requests a change.
+Java 21 matches the challenge's runtime requirement.
 
 Support concurrent callers within one JVM using shared singleton lock registries. Multiple processes, independent application contexts writing concurrently, and direct database writers are outside this guarantee. Neither a SQL transaction nor the composite entry key substitutes for the shared Java transaction-ID lock.
 
@@ -173,7 +173,7 @@ For the current entry model, reconstruct each balance as successful destination/
 
 ## Completion and trade-offs
 
-Delivery requires source, Maven Wrapper, migrations, relevant tests, README, and a clean `./mvnw verify`. Pin a Java-25-compatible Google formatter via Spotless; enforce formatting and the selected Google Checkstyle rules for main/test Java during `verify`, failing on warnings without suppressing new violations.
+Delivery requires source, Maven Wrapper, migrations, relevant tests, README, and a clean `./mvnw verify`. Pin a Java-21-compatible Google formatter via Spotless; enforce formatting and the selected Google Checkstyle rules for main/test Java during `verify`, failing on warnings without suppressing new violations.
 
 The README must explain single-process scope, global-ID exclusion by Java locks, sorted account locking, commit boundaries, final failures versus infrastructure errors, replay after restart, seed history, unbounded retained database history, and target-database testing required before changing DBMS. Make no throughput/latency claims without measurements. Keep the owner able to explain every submitted design choice.
 
@@ -184,5 +184,5 @@ The README must explain single-process scope, global-ID exclusion by Java locks,
 - [Spring programmatic transactions](https://docs.spring.io/spring-framework/reference/data-access/transaction/programmatic.html)
 - [Spring rollback behavior](https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/rolling-back.html)
 - [Spring Boot database initialization](https://docs.spring.io/spring-boot/how-to/data-initialization.html) (use settings supported by pinned Boot 4.0.9)
-- [Java 25 ReentrantLock](https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/concurrent/locks/ReentrantLock.html)
+- [Java 21 ReentrantLock](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/locks/ReentrantLock.html)
 - [H2 write-delay setting](https://h2database.com/html/commands.html#set_write_delay)

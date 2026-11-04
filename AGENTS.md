@@ -9,7 +9,7 @@
 
 ## Fixed project choices
 
-- `me.fekri:finchbalance`; base package `me.fekri.finchbalance`; Spring Boot 4.0.9; Java 25; Maven Wrapper; JAR; `.properties` configuration.
+- `me.fekri:finchbalance`; base package `me.fekri.finchbalance`; Spring Boot 4.0.9; Java 21; Maven Wrapper; JAR; `.properties` configuration.
 - Spring Data JPA/Hibernate with `jakarta.persistence` imports. File-backed H2 for normal execution; isolated H2 databases for tests. Flyway alone creates schema/seeds.
 - Java `ReentrantLock` for original transaction IDs and account IDs. Do not introduce optimistic locking, `@Version`, automatic retry loops, a global execution lock, or a second account concurrency protocol without an owner-requested design change.
 - One JVM with shared singleton lock registries. Do not imply correctness across independent processes or direct database writers.
@@ -21,7 +21,7 @@
 - Follow the [Google Java Style Guide](https://google.github.io/styleguide/javaguide.html) for every production and test Java source.
 - Use two-space block indentation, braces for control flow, explicit imports, consistent import order, and formatter-managed wrapping. Do not use wildcard imports.
 - Use meaningful names and Javadoc for public types and nontrivial public methods. Comments explain invariants or reasoning, not obvious syntax.
-- Pin a Java-25-compatible Google formatter through Spotless. T01 also adds Google Checkstyle enforcement for main and test sources, with warnings failing the build. Do not claim these plugins exist before T01 is implemented.
+- Pin a Java-21-compatible Google formatter through Spotless. T01 also adds Google Checkstyle enforcement for main and test sources, with warnings failing the build. Do not claim these plugins exist before T01 is implemented.
 - Once configured, use `./mvnw spotless:apply` and run `./mvnw verify`. Never suppress new violations, weaken checks, exclude changed source, or skip tests to obtain a green build.
 - Use constructor injection, string-mapped enums, and explicit persistence mappings. Avoid Lombok and generated accessor boilerplate tooling unless requested. Keep domain outcomes immutable; managed JPA entities need their normal JPA-compatible shape.
 

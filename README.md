@@ -2,11 +2,11 @@
 
 A Java balance service for concurrent callers in one JVM. Credit, debit, and transfer commit account changes and final transaction history together. The original transaction ID identifies the first committed outcome across all operation types, including business failures.
 
-The project uses Java **25**, Spring Boot **4.0.9**, Maven Wrapper, Spring Data JPA/Hibernate, Flyway, and embedded file-backed H2. Java 25 was explicitly selected by the owner in place of the challenge's Java 21 requirement. Coordinates are `me.fekri:finchbalance`; the base package is `me.fekri.finchbalance`.
+The project uses Java **21**, Spring Boot **4.0.9**, Maven Wrapper, Spring Data JPA/Hibernate, Flyway, and embedded file-backed H2. Coordinates are `me.fekri:finchbalance`; the base package is `me.fekri.finchbalance`.
 
 ## Build and run
 
-Install a JDK 25 and ensure `java` and `JAVA_HOME` select it. From the repository root:
+Install a JDK 21 and ensure `java` and `JAVA_HOME` select it. From the repository root:
 
 ```sh
 ./mvnw clean verify
