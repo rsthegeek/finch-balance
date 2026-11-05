@@ -1,34 +1,32 @@
 package me.fekri.finchbalance.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
-import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
-import tools.jackson.databind.json.JsonMapper;
+import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.servlet.assertj.MvcTestResult;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 @ActiveProfiles("test")
-@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
+@SpringBootTest
+@AutoConfigureMockMvc
 class BalanceControllerTest {
   private final JdbcTemplate jdbc;
-  private final JsonMapper json;
-  @LocalServerPort private int port;
+  private final MockMvcTester mvc;
 
   @Autowired
-  BalanceControllerTest(JdbcTemplate jdbc, JsonMapper json) {
+  BalanceControllerTest(JdbcTemplate jdbc, MockMvcTester mvc) {
     this.jdbc = jdbc;
-    this.json = json;
+    this.mvc = mvc;
   }
 
   @BeforeEach
@@ -42,22 +40,22 @@ class BalanceControllerTest {
   }
 
   @Test
-  void allOperationsCommitBalancesAndCompleteHistoryBeforeResponding() throws Exception {
-    assertThat(post("credits", mutation("C", "1000", "http:credit")).statusCode()).isEqualTo(204);
-    assertThat(post("debits", mutation("C", "250", "http:debit")).statusCode()).isEqualTo(204);
+  void allOperationsCommitBalancesAndCompleteHistoryBeforeResponding() {
+    assertThat(post("credits", mutation("C", "1000", "http:credit"))).hasStatus(204);
+    assertThat(post("debits", mutation("C", "250", "http:debit"))).hasStatus(204);
     assertThat(
             post(
-                    "transfers",
-                    """
+                "transfers",
+                """
                     {"sourceAccountId":"A","destinationAccountId":"C",
                      "amount":500,"transactionId":"http:transfer"}
-                    """)
-                .statusCode())
-        .isEqualTo(204);
+                    """))
+        .hasStatus(204);
     var response = get("/api/accounts/C/balance");
-    assertThat(response.statusCode()).isEqualTo(200);
-    assertThat(json.readTree(response.body()).get("accountId").asText()).isEqualTo("C");
-    assertThat(json.readTree(response.body()).get("balance").asLong()).isEqualTo(1250);
+    assertThat(response)
+        .hasStatusOk()
+        .bodyJson()
+        .isStrictlyEqualTo("{\"accountId\":\"C\",\"balance\":1250}");
     assertThat(balance("A")).isEqualTo(99500);
     assertThat(balance("B")).isEqualTo(50000);
     assertThat(entries("http:credit")).isOne();
@@ -84,30 +82,28 @@ class BalanceControllerTest {
   }
 
   @Test
-  void successfulReplayIgnoresChangedBusinessPayloadAcrossOperationTypes() throws Exception {
+  void successfulReplayIgnoresChangedBusinessPayloadAcrossOperationTypes() {
     var first = post("credits", mutation("C", "10", "http:replay"));
-    assertThat(first.statusCode()).isEqualTo(204);
-    assertThat(first.body()).isEmpty();
-    assertThat(post("debits", mutation("unknown", "-1", "http:replay")).statusCode())
-        .isEqualTo(204);
+    assertThat(first).hasStatus(204);
+    assertThat(first).bodyText().isEmpty();
+    assertThat(post("debits", mutation("unknown", "-1", "http:replay"))).hasStatus(204);
     assertThat(
             post(
-                    "transfers",
-                    """
+                "transfers",
+                """
                     {"sourceAccountId":"A","destinationAccountId":"A",
                      "amount":0,"transactionId":"http:replay"}
-                    """)
-                .statusCode())
-        .isEqualTo(204);
+                    """))
+        .hasStatus(204);
     assertThat(balance("C")).isEqualTo(10);
     assertThat(balance("A")).isEqualTo(100000);
     assertThat(entries("http:replay")).isOne();
   }
 
   @Test
-  void failedReplayKeepsItsOriginalCodeAfterFunding() throws Exception {
+  void failedReplayKeepsItsOriginalCodeAfterFunding() {
     assertError(post("debits", mutation("C", "10", "http:failed")), 409, "INSUFFICIENT_FUNDS");
-    assertThat(post("credits", mutation("C", "100", "http:funding")).statusCode()).isEqualTo(204);
+    assertThat(post("credits", mutation("C", "100", "http:funding"))).hasStatus(204);
     assertError(post("credits", mutation("A", "1", "http:failed")), 409, "INSUFFICIENT_FUNDS");
     assertThat(balance("C")).isEqualTo(100);
     assertThat(balance("A")).isEqualTo(100000);
@@ -126,7 +122,7 @@ class BalanceControllerTest {
   }
 
   @Test
-  void businessErrorsHaveStableStatusesAndPersistFinalOutcomes() throws Exception {
+  void businessErrorsHaveStableStatusesAndPersistFinalOutcomes() {
     assertError(post("credits", mutation("C", "0", "http:invalid")), 400, "INVALID_AMOUNT");
     assertError(
         post("credits", mutation("unknown", "1", "http:unknown")), 404, "ACCOUNT_NOT_FOUND");
@@ -152,7 +148,7 @@ class BalanceControllerTest {
   }
 
   @Test
-  void malformedJsonAndIdentifiersNeverCreateOutcomesOrChangeMoney() throws Exception {
+  void malformedJsonAndIdentifiersNeverCreateOutcomesOrChangeMoney() {
     for (String amount : List.of("null", "1.5", "\"1\"", "true", "9223372036854775808")) {
       assertError(post("credits", mutation("C", amount, "http:malformed")), 400, "INVALID_REQUEST");
     }
@@ -188,7 +184,46 @@ class BalanceControllerTest {
   }
 
   @Test
-  void corruptHistoryReturnsGenericServerErrorWithoutReexecution() throws Exception {
+  void beanValidationHandlesBodyAndPathConstraintsWithoutPersistingOutcomes() {
+    var invalidBody = post("credits", mutation(" ", "1", "http:bean"));
+    assertError(invalidBody, 400, "INVALID_REQUEST");
+    assertThat(invalidBody).failure().isInstanceOf(MethodArgumentNotValidException.class);
+    var missingAmount = post("debits", "{\"accountId\":\"C\",\"transactionId\":\"http:bean\"}");
+    assertError(missingAmount, 400, "INVALID_REQUEST");
+    assertThat(missingAmount).failure().isInstanceOf(MethodArgumentNotValidException.class);
+    var missingDestination =
+        post(
+            "transfers",
+            "{\"sourceAccountId\":\"A\",\"amount\":1,\"transactionId\":\"http:bean\"}");
+    assertError(missingDestination, 400, "INVALID_REQUEST");
+    assertThat(missingDestination).failure().isInstanceOf(MethodArgumentNotValidException.class);
+    for (String account : List.of(" ", "x".repeat(256))) {
+      var invalidPath = mvc.get().uri("/api/accounts/{accountId}/balance", account).exchange();
+      assertError(invalidPath, 400, "INVALID_REQUEST");
+      assertThat(invalidPath).failure().isInstanceOf(HandlerMethodValidationException.class);
+    }
+    assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM transactions", Long.class)).isEqualTo(2);
+    assertThat(balance("C")).isZero();
+  }
+
+  @Test
+  void identifierLimitsAllow255CharactersWithoutNormalization() {
+    String id = "x".repeat(255);
+    assertThat(post("credits", mutation("C", "1", id))).hasStatus(204);
+    assertThat(entries(id)).isOne();
+    assertThat(balance("C")).isOne();
+    String account = " " + "x".repeat(253) + " ";
+    assertError(post("credits", mutation(account, "1", "http:boundary")), 404, "ACCOUNT_NOT_FOUND");
+    assertThat(
+            jdbc.queryForObject(
+                "SELECT account_id FROM transactions WHERE transaction_id = ?",
+                String.class,
+                "http:boundary"))
+        .isEqualTo(account);
+  }
+
+  @Test
+  void corruptHistoryReturnsGenericServerErrorWithoutReexecution() {
     jdbc.update(
         """
         INSERT INTO transactions
@@ -199,14 +234,14 @@ class BalanceControllerTest {
         "http:corrupt");
     var response = post("credits", mutation("C", "1", "http:corrupt"));
     assertError(response, 500, "INTERNAL_ERROR");
-    assertThat(response.body()).doesNotContain("Invalid committed", "SELECT", "stackTrace");
+    assertThat(response).bodyText().doesNotContain("Invalid committed", "SELECT", "stackTrace");
     assertThat(balance("C")).isZero();
     assertThat(entries("http:corrupt")).isOne();
   }
 
   @Test
-  void databaseConsoleIsDisabledWithoutLocalProfile() throws Exception {
-    assertThat(get("/h2-console/").statusCode()).isEqualTo(404);
+  void databaseConsoleIsDisabledWithoutLocalProfile() {
+    assertThat(get("/h2-console/")).hasStatus(404);
   }
 
   private long balance(String account) {
@@ -225,31 +260,24 @@ class BalanceControllerTest {
         .formatted(account, amount, id);
   }
 
-  private HttpResponse<String> post(String operation, String body) throws Exception {
-    return send("/api/" + operation, HttpRequest.BodyPublishers.ofString(body));
+  private MvcTestResult post(String operation, String body) {
+    return mvc.post()
+        .uri("/api/" + operation)
+        .contentType(APPLICATION_JSON)
+        .content(body)
+        .exchange();
   }
 
-  private HttpResponse<String> get(String path) throws Exception {
-    return send(path, null);
+  private MvcTestResult get(String path) {
+    return mvc.get().uri(path).exchange();
   }
 
-  private HttpResponse<String> send(String path, HttpRequest.BodyPublisher body) throws Exception {
-    var request =
-        HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
-            .timeout(Duration.ofSeconds(10));
-    if (body != null) {
-      request.header("Content-Type", "application/json").POST(body);
-    }
-    try (var client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build()) {
-      return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
-    }
-  }
-
-  private void assertError(HttpResponse<String> response, int status, String code)
-      throws Exception {
-    assertThat(response.statusCode()).withFailMessage(response.body()).isEqualTo(status);
-    assertThat(response.headers().firstValue("Content-Type").orElseThrow())
-        .startsWith("application/json");
-    assertThat(json.readTree(response.body()).get("code").asText()).isEqualTo(code);
+  private static void assertError(MvcTestResult response, int status, String code) {
+    assertThat(response)
+        .hasStatus(status)
+        .hasContentTypeCompatibleWith(APPLICATION_JSON)
+        .bodyJson()
+        .extractingPath("$.code")
+        .isEqualTo(code);
   }
 }

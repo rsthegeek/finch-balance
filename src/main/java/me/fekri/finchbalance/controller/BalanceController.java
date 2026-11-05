@@ -1,5 +1,8 @@
 package me.fekri.finchbalance.controller;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import me.fekri.finchbalance.dto.AccountBalance;
 import me.fekri.finchbalance.dto.BalanceMutation;
 import me.fekri.finchbalance.dto.TransferMutation;
@@ -26,28 +29,28 @@ public class BalanceController {
 
   /** Returns an account-locked committed balance. */
   @GetMapping("/accounts/{accountId}/balance")
-  public AccountBalance getBalance(@PathVariable String accountId) {
+  public AccountBalance getBalance(@PathVariable @NotBlank @Size(max = 255) String accountId) {
     return new AccountBalance(accountId, balances.getBalance(accountId));
   }
 
   /** Credits the account or replays the original outcome without adding money twice. */
   @PostMapping("/credits")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void credit(@RequestBody BalanceMutation request) {
+  public void credit(@Valid @RequestBody BalanceMutation request) {
     balances.credit(request.accountId(), request.amount(), request.transactionId());
   }
 
   /** Debits the account or reports its previously committed rejection. */
   @PostMapping("/debits")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void debit(@RequestBody BalanceMutation request) {
+  public void debit(@Valid @RequestBody BalanceMutation request) {
     balances.debit(request.accountId(), request.amount(), request.transactionId());
   }
 
   /** Transfers atomically or replays the original transaction's outcome. */
   @PostMapping("/transfers")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void transfer(@RequestBody TransferMutation request) {
+  public void transfer(@Valid @RequestBody TransferMutation request) {
     balances.transfer(
         request.sourceAccountId(),
         request.destinationAccountId(),

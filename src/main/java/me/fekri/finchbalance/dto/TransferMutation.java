@@ -1,12 +1,12 @@
 package me.fekri.finchbalance.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 /** JSON transfer envelope; amount and account-state rules are evaluated by the service. */
 public record TransferMutation(
-    String sourceAccountId, String destinationAccountId, Long amount, String transactionId) {
-  /** Requires an explicit amount while preserving valid negative/zero business attempts. */
-  public TransferMutation {
-    if (amount == null) {
-      throw new IllegalArgumentException("amount is required");
-    }
-  }
-}
+    @NotBlank @Size(max = 255) String sourceAccountId,
+    @NotBlank @Size(max = 255) String destinationAccountId,
+    @NotNull Long amount,
+    @NotBlank @Size(max = 255) String transactionId) {}

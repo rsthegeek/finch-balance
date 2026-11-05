@@ -133,6 +133,8 @@ The controller delegates to the existing BalanceService without an enclosing tra
 
 JSON amounts must be present, numeric integers within the Java long range. Malformed JSON/envelopes return 400 INVALID_REQUEST without history. Zero/negative numeric amounts reach the service, so new attempts persist INVALID_AMOUNT and retries still consult original history first. Business codes map to 400 (invalid amount/self-transfer), 404 (unknown account), or 409 (insufficient funds/overflow). History integrity and persistence failures return a generic 500, separate from business outcomes.
 
+Bean Validation applies `@NotBlank`/`@Size(max = 255)` to HTTP identifiers and `@NotNull` to amounts, triggered by `@Valid` on request bodies and MVC method validation on the balance path. Jackson rejects malformed/non-integral JSON before validation. Business amount, account-state, and transfer rules stay inside the transaction after replay lookup; do not apply `@Positive` at the HTTP boundary. Direct Java callers retain the service's identifier guards. Controller tests use MockMvcTester with the real service and isolated H2 transactions; the separate console-servlet test uses a live HTTP server.
+
 Default HTTP listens on 127.0.0.1:8080. The local profile enables the H2 console at /h2-console in the same JVM, so inspection can use the existing file database while the app runs. Direct SQL mutations bypass service guarantees; inspection uses SELECT queries. No authentication or remote database server is introduced. Non-web test helpers and Java-only examples explicitly select WebApplicationType.NONE.
 
 ## Locking, transactions, and JPA

@@ -44,6 +44,8 @@ curl http://127.0.0.1:8080/api/accounts/C/balance
 
 Amounts must be JSON integer numbers within the Java `long` range. Missing, null, fractional, string, and out-of-range amounts return **400** with `INVALID_REQUEST` and do not create history. Numeric zero/negative attempts reach business validation and persist `INVALID_AMOUNT`; retries consult history first.
 
+Spring Bean Validation checks identifier shape and required amounts using `@NotBlank`, `@Size`, `@NotNull`, and `@Valid`. Business rules run in the service after replay lookup, so even a retry with a zero/negative amount can replay its original successful outcome.
+
 Business errors return JSON such as `{"code":"INSUFFICIENT_FUNDS","message":"INSUFFICIENT_FUNDS"}`. Status codes are **400** for invalid amounts/self-transfers, **404** for unknown accounts, and **409** for insufficient funds/overflow. Integrity or persistence failures return **500** with a generic `INTERNAL_ERROR`, rather than a stored business rejection. A failed replay returns the original business code.
 
 ## Inspecting the database
@@ -168,5 +170,7 @@ History is retained indefinitely, so storage grows. `BalanceReconciler.reconcile
 ## Tests and further reading
 
 Tests use isolated H2 databases and real transactions. Coverage includes validation, duplicates, concurrent spending/transfers, independent progress, rollback, locks through commit, restart replay, 1000 mixed calls, and reconciliation. Tests never touch the normal local database.
+
+Controller tests use Spring's `MockMvcTester` with the real service and database. The H2 console's separate servlet is checked with a live HTTP test.
 
 [PLAN.md](PLAN.md) contains the detailed design; [TASKS.md](TASKS.md) records implementation and verification evidence. The implementation and tests were developed with Codex assistance.

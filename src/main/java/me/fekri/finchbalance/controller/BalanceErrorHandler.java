@@ -10,8 +10,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.transaction.TransactionException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 
 /**
  * Translates service outcomes after completion without wrapping the controller in a transaction.
@@ -34,7 +36,11 @@ public class BalanceErrorHandler {
   }
 
   /** Reports malformed envelopes without inventing a persisted business outcome. */
-  @ExceptionHandler({IllegalArgumentException.class, HttpMessageNotReadableException.class})
+  @ExceptionHandler({
+    MethodArgumentNotValidException.class,
+    HandlerMethodValidationException.class,
+    HttpMessageNotReadableException.class
+  })
   public ResponseEntity<ApiError> invalidRequest() {
     return ResponseEntity.badRequest()
         .body(
