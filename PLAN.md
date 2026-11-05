@@ -165,6 +165,8 @@ Do not remove a slot merely because its owner unlocked: an existing waiter might
 
 Use one Maven module with a small service, immutable request/outcome types, JPA entities/repositories, a lock registry, and configuration. Use constructor injection and `jakarta.persistence` imports. Do not introduce a generic framework or layers without a concrete purpose.
 
+Organize these responsibilities beneath `me.fekri.finchbalance` into `service`, `dto`, `entity`, `repository`, `concurrency`, `config`, `model` (shared enums), `exception`, and `validation` packages. Keep the application entry point in the base package for component/entity discovery. Mirror responsibility packages in tests and place shared test infrastructure in `support`. Service-only calculation, coordination, and outcome-decoding helpers remain package-private in `service`; types used across packages expose the methods needed by their collaborators.
+
 Every implementation task in [TASKS.md](TASKS.md) includes meaningful tests written with the change. Verify observable balances, persisted entry counts/contents, failures, and commit/rollback behavior. Mocks alone cannot establish database atomicity or synchronization correctness. Use real H2 for those assertions; test doubles may introduce controlled faults around real collaborators.
 
 Concurrency tests use bounded executors, controlled start gates, collected futures, bounded completion, and reliable cleanup. No arbitrary sleeps or timing-throughput assertions. Do not wrap concurrent tests in an enclosing test transaction: fixtures must be committed and worker transactions must really complete. Inspect persisted state with a fresh persistence context after commit/rollback.

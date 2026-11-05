@@ -33,6 +33,24 @@ Normal execution uses `jdbc:h2:file:./data/finchbalance;DB_CLOSE_ON_EXIT=FALSE;W
 
 Tests use distinct named in-memory databases. File/restart tests and the normal-configuration child-JVM test use temporary directories, so verification does not open the owner's local database.
 
+## Project structure
+
+Production packages live under `src/main/java/me/fekri/finchbalance`:
+
+| Package | Responsibility |
+| --- | --- |
+| `service` | Balance API, implementation, reconciliation, and internal business/transaction coordination |
+| `dto` | Immutable operation requests, final outcomes, and reconciliation results |
+| `entity` | JPA accounts, transaction entries, and embedded entry identity |
+| `repository` | Focused JPA lookups, append-only history persistence, and reconstruction queries |
+| `concurrency` | Keyed lock registries, leases, and ordered operation locking |
+| `config` | Spring lock-registry and UTC clock configuration |
+| `model` | Shared operation, entry-role, entry-status, and failure-code enums |
+| `exception` | Business rejection and committed-history integrity exceptions |
+| `validation` | Identifier-envelope validation |
+
+`FinchbalanceApplication` stays in the base package so Spring discovers the subpackages and JPA entities automatically. Tests mirror these packages under `src/test/java`, with shared context, transaction, and thread helpers in `support`. Flyway migrations remain in `src/main/resources/db/migration`.
+
 ## Java API
 
 All amounts are integer minor units in one currency, represented by `long`. Positive successful amounts and balances in `[0, Long.MAX_VALUE]` are enforced. Arithmetic overflow is rejected before any balance changes. Debit may consume the full balance.
@@ -40,8 +58,8 @@ All amounts are integer minor units in one currency, represented by `long`. Posi
 This complete example obtains the bean and uses the seeded accounts. On a fresh database it prints `1250`. Compile it in an application with this project's runtime dependencies on its classpath; the packaged JAR's nested libraries are not a plain `javac` classpath.
 
 ```java
-import me.fekri.finchbalance.BalanceService;
 import me.fekri.finchbalance.FinchbalanceApplication;
+import me.fekri.finchbalance.service.BalanceService;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 public class BalanceExample {
@@ -142,4 +160,4 @@ The 51 tests cover schema constraints, seeds and restart, every JPA entry form, 
 
 Concurrency tests use bounded pools/futures and latches, collect caller results, and clean up in `finally`. Database assertions use real H2 migrations and real transactions. Fault tests introduce controlled failures around actual persistence collaborators; fault controls exist only in test wiring. Concurrent/restart/commit tests have no enclosing test transaction.
 
-Implementation and tests were developed with Codex against the accepted [PLAN.md](PLAN.md) and [AGENTS.md](AGENTS.md). [TASKS.md](TASKS.md) records verification evidence task by task, with one implementation commit per task. Review the small coordinator, lock registry, calculation record, and stored-outcome decoder alongside their behavioral tests to defend the design. These tests establish the exercised cases in the stated scope; they are not performance measurements or a multi-process proof.
+Implementation and tests were developed with Codex against the accepted [PLAN.md](PLAN.md) and [AGENTS.md](AGENTS.md). [TASKS.md](TASKS.md) records verification evidence task by task. Review the small coordinator, lock registry, calculation record, and stored-outcome decoder alongside their behavioral tests to defend the design. These tests establish the exercised cases in the stated scope; they are not performance measurements or a multi-process proof.
