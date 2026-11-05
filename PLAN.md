@@ -27,7 +27,7 @@ Java 21 matches the challenge's runtime requirement.
 
 Support concurrent callers within one JVM using shared singleton lock registries. Multiple processes, independent application contexts writing concurrently, and direct database writers are outside this guarantee. Neither a SQL transaction nor the composite entry key substitutes for the shared Java transaction-ID lock.
 
-Keep the initial product limited to the Java service interface. REST endpoints, Redis, Kafka, Docker, authentication flows, optimistic locking, automatic retries, cleanup schedulers, and benchmarking infrastructure are outside the required implementation.
+The original challenge implementation exposes a Java service interface. Owner-requested T25 adds a thin HTTP controller and a local H2 inspection console. Redis, Kafka, Docker, authentication flows, optimistic locking, automatic retries, cleanup schedulers, and benchmarking infrastructure remain outside the implementation.
 
 ## Public API and behavioral contract
 
@@ -113,7 +113,8 @@ Intended normal-execution properties, to be implemented by the configuration tas
 
 ```properties
 spring.application.name=finchbalance
-spring.main.web-application-type=none
+server.address=127.0.0.1
+server.port=8080
 spring.datasource.url=jdbc:h2:file:./data/finchbalance;DB_CLOSE_ON_EXIT=FALSE;WRITE_DELAY=0
 spring.datasource.username=sa
 spring.datasource.password=
@@ -125,6 +126,14 @@ spring.flyway.locations=classpath:db/migration
 ```
 
 These credentials are for the embedded local exercise. Ignore local database files in Git. H2's `WRITE_DELAY=0` trades throughput for removing its default commit-to-log-flush delay; do not claim protection against every storage failure. Isolate ordinary integration tests with named in-memory databases and use temporary file-backed databases for restart tests. All integration tests use the real Flyway migrations.
+
+## Local HTTP access (owner-requested T25)
+
+The controller delegates to the existing BalanceService without an enclosing transaction or another concurrency protocol. `GET /api/accounts/{accountId}/balance` returns account ID and balance. `POST /api/credits` and `/api/debits` accept accountId, amount, and transactionId; `POST /api/transfers` accepts sourceAccountId, destinationAccountId, amount, and transactionId. Successful writes and successful replays return 204 with no body.
+
+JSON amounts must be present, numeric integers within the Java long range. Malformed JSON/envelopes return 400 INVALID_REQUEST without history. Zero/negative numeric amounts reach the service, so new attempts persist INVALID_AMOUNT and retries still consult original history first. Business codes map to 400 (invalid amount/self-transfer), 404 (unknown account), or 409 (insufficient funds/overflow). History integrity and persistence failures return a generic 500, separate from business outcomes.
+
+Default HTTP listens on 127.0.0.1:8080. The local profile enables the H2 console at /h2-console in the same JVM, so inspection can use the existing file database while the app runs. Direct SQL mutations bypass service guarantees; inspection uses SELECT queries. No authentication or remote database server is introduced. Non-web test helpers and Java-only examples explicitly select WebApplicationType.NONE.
 
 ## Locking, transactions, and JPA
 
@@ -165,7 +174,7 @@ Do not remove a slot merely because its owner unlocked: an existing waiter might
 
 Use one Maven module with a small service, immutable request/outcome types, JPA entities/repositories, a lock registry, and configuration. Use constructor injection and `jakarta.persistence` imports. Do not introduce a generic framework or layers without a concrete purpose.
 
-Organize these responsibilities beneath `me.fekri.finchbalance` into `service`, `dto`, `entity`, `repository`, `concurrency`, `config`, `model` (shared enums), `exception`, and `validation` packages. Keep the application entry point in the base package for component/entity discovery. Mirror responsibility packages in tests and place shared test infrastructure in `support`. Service-only calculation, coordination, and outcome-decoding helpers remain package-private in `service`; types used across packages expose the methods needed by their collaborators.
+Organize these responsibilities beneath `me.fekri.finchbalance` into `controller`, `service`, `dto`, `entity`, `repository`, `concurrency`, `config`, `model` (shared enums), `exception`, and `validation` packages. Keep the application entry point in the base package for component/entity discovery. Mirror responsibility packages in tests and place shared test infrastructure in `support`. Service-only calculation, coordination, and outcome-decoding helpers remain package-private in `service`; types used across packages expose the methods needed by their collaborators.
 
 Every implementation task in [TASKS.md](TASKS.md) includes meaningful tests written with the change. Verify observable balances, persisted entry counts/contents, failures, and commit/rollback behavior. Mocks alone cannot establish database atomicity or synchronization correctness. Use real H2 for those assertions; test doubles may introduce controlled faults around real collaborators.
 

@@ -3,6 +3,7 @@ package me.fekri.finchbalance.support;
 import java.nio.file.Path;
 import java.util.UUID;
 import me.fekri.finchbalance.FinchbalanceApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -22,6 +23,7 @@ public final class TestContexts {
 
   private static ConfigurableApplicationContext open(String url, Class<?>... sources) {
     return new SpringApplicationBuilder(FinchbalanceApplication.class)
+        .web(WebApplicationType.NONE)
         .sources(sources)
         .profiles("test")
         .run("--spring.datasource.url=" + url, "--spring.main.banner-mode=off");

@@ -8,12 +8,79 @@ Select JDK 21 with `JAVA_HOME`, then run from the project root:
 
 ```sh
 ./mvnw clean verify
-java -jar target/finchbalance-0.0.1-SNAPSHOT.jar
+java -jar target/finchbalance-0.0.1-SNAPSHOT.jar --spring.profiles.active=local
 ```
 
-The build runs 51 tests and checks Google Java Style with Spotless and Checkstyle. Format Java with `./mvnw spotless:apply`.
+The build runs the behavioral tests and checks Google Java Style with Spotless and Checkstyle. Format Java with `./mvnw spotless:apply`.
 
-The JAR initializes the database; it does not start an HTTP server. Use the Spring `BalanceService` bean from Java code. No separate database server is needed.
+The JAR starts the API at `http://127.0.0.1:8080`. The `local` profile also enables the H2 console for inspecting data. No separate database server is needed. Access is bound to loopback for local testing; authentication is not implemented.
+
+## HTTP API
+
+| Method | Path | Request / response |
+| --- | --- | --- |
+| GET | `/api/accounts/{accountId}/balance` | Returns `{"accountId":"C","balance":1250}` |
+| POST | `/api/credits` | JSON: `accountId`, `amount`, `transactionId` |
+| POST | `/api/debits` | JSON: `accountId`, `amount`, `transactionId` |
+| POST | `/api/transfers` | JSON: `sourceAccountId`, `destinationAccountId`, `amount`, `transactionId` |
+
+Successful writes, including successful duplicate replays, return **204 No Content**. Read balances with GET rather than treating two separate reads as a simultaneous snapshot. On a fresh database, these requests leave C with 1250 minor units:
+
+```sh
+curl -i http://127.0.0.1:8080/api/credits \
+  -H 'Content-Type: application/json' \
+  -d '{"accountId":"C","amount":1000,"transactionId":"api:credit"}'
+
+curl -i http://127.0.0.1:8080/api/debits \
+  -H 'Content-Type: application/json' \
+  -d '{"accountId":"C","amount":250,"transactionId":"api:debit"}'
+
+curl -i http://127.0.0.1:8080/api/transfers \
+  -H 'Content-Type: application/json' \
+  -d '{"sourceAccountId":"A","destinationAccountId":"C","amount":500,"transactionId":"api:transfer"}'
+
+curl http://127.0.0.1:8080/api/accounts/C/balance
+```
+
+Amounts must be JSON integer numbers within the Java `long` range. Missing, null, fractional, string, and out-of-range amounts return **400** with `INVALID_REQUEST` and do not create history. Numeric zero/negative attempts reach business validation and persist `INVALID_AMOUNT`; retries consult history first.
+
+Business errors return JSON such as `{"code":"INSUFFICIENT_FUNDS","message":"INSUFFICIENT_FUNDS"}`. Status codes are **400** for invalid amounts/self-transfers, **404** for unknown accounts, and **409** for insufficient funds/overflow. Integrity or persistence failures return **500** with a generic `INTERNAL_ERROR`, rather than a stored business rejection. A failed replay returns the original business code.
+
+## Inspecting the database
+
+While the app runs with the `local` profile, open `http://127.0.0.1:8080/h2-console/`.
+
+Use these connection settings when starting from the project root:
+
+| Setting | Value |
+| --- | --- |
+| Driver class | `org.h2.Driver` |
+| JDBC URL | `jdbc:h2:file:./data/finchbalance;DB_CLOSE_ON_EXIT=FALSE;WRITE_DELAY=0;IFEXISTS=TRUE` |
+| User name | `sa` |
+| Password | Empty |
+
+Use your configured datasource URL if you override it. `IFEXISTS=TRUE` avoids accidentally creating a different database. The console runs inside the application JVM and can inspect the existing database while the API runs. It is disabled without the `local` profile, following [Spring Boot's H2-console configuration](https://docs.spring.io/spring-boot/4.0/reference/data/sql.html#data.sql.h2-web-console).
+
+Run these queries to see balances and committed history:
+
+```sql
+SELECT id, user_id, balance FROM accounts ORDER BY id;
+
+SELECT transaction_id, entry_role, account_id, counterparty_account_id,
+       amount, type, status, failure_code, created_at
+FROM transactions
+ORDER BY created_at, transaction_id, entry_role;
+```
+
+Use SELECT queries for inspection: SQL writes bypass the service's locks and history rules. Two separate queries while requests are running are not a simultaneous snapshot.
+
+For IntelliJ IDEA's Database tool window, stop the app first and add an H2 file datasource with user `sa`, an empty password, and this URL (replace the path):
+
+```text
+jdbc:h2:file:/absolute/path/to/finchbalance/data/finchbalance;IFEXISTS=TRUE;ACCESS_MODE_DATA=r
+```
+
+Use the H2 driver version managed by this project's Maven dependencies. Omit the `.mv.db` filename suffix. H2's [read-only file access](https://h2database.github.io/html/features.html#custom_access_mode) supports inspection; a separate embedded connection cannot share the file while the app holds it. Disconnect the IDE datasource before restarting the app.
 
 ## Using the service
 
@@ -24,11 +91,13 @@ With the project's runtime dependencies on the classpath, this example prints `1
 ```java
 import me.fekri.finchbalance.FinchbalanceApplication;
 import me.fekri.finchbalance.service.BalanceService;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 public class BalanceExample {
   public static void main(String[] args) {
-    try (var context = new SpringApplicationBuilder(FinchbalanceApplication.class).run(args)) {
+    try (var context = new SpringApplicationBuilder(FinchbalanceApplication.class)
+        .web(WebApplicationType.NONE).run(args)) {
       BalanceService balances = context.getBean(BalanceService.class);
       balances.credit("C", 1000, "example:credit");
       balances.debit("C", 250, "example:debit");
@@ -61,7 +130,7 @@ Business failures are committed before being reported. Unexpected persistence er
 
 ## How it works
 
-The main flow is `JpaBalanceService` (API) → `OperationCoordinator` (locks and transactions) → `BalanceStore` (JPA persistence). Tests mirror the production packages.
+The HTTP flow is `BalanceController` → `BalanceService` / `JpaBalanceService` → `OperationCoordinator` (locks and transactions) → `BalanceStore` (JPA persistence). JSON request/response records live in `dto`, HTTP adapters in `controller`; tests mirror the production packages. Java callers can still use the service directly.
 
 After identifier validation, each write:
 

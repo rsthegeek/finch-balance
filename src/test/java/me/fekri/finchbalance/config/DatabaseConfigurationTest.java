@@ -12,6 +12,7 @@ import me.fekri.finchbalance.FinchbalanceApplication;
 import me.fekri.finchbalance.support.TestContexts;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -75,7 +76,9 @@ class DatabaseConfigurationTest {
     /** Opens and verifies the actual configured datasource. */
     public static void main(String[] args) throws Exception {
       try (ConfigurableApplicationContext context =
-          new SpringApplicationBuilder(FinchbalanceApplication.class).run()) {
+          new SpringApplicationBuilder(FinchbalanceApplication.class)
+              .web(WebApplicationType.NONE)
+              .run()) {
         try (Connection connection = context.getBean(DataSource.class).getConnection()) {
           assertThat(connection.getMetaData().getURL())
               .startsWith("jdbc:h2:file:./data/finchbalance");
