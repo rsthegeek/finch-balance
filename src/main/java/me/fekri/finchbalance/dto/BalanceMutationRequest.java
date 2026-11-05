@@ -4,9 +4,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-/** JSON transfer envelope; amount and account-state rules are evaluated by the service. */
-public record TransferMutation(
-    @NotBlank @Size(max = 255) String sourceAccountId,
-    @NotBlank @Size(max = 255) String destinationAccountId,
+/** JSON credit/debit envelope; business validation remains behind stored-outcome lookup. */
+public record BalanceMutationRequest(
+    @NotBlank @Size(max = 255) String accountId,
     @NotNull Long amount,
     @NotBlank @Size(max = 255) String transactionId) {}

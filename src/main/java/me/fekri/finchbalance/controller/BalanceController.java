@@ -4,8 +4,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import me.fekri.finchbalance.dto.AccountBalance;
-import me.fekri.finchbalance.dto.BalanceMutation;
-import me.fekri.finchbalance.dto.TransferMutation;
+import me.fekri.finchbalance.dto.BalanceMutationRequest;
+import me.fekri.finchbalance.dto.TransferMutationRequest;
 import me.fekri.finchbalance.service.BalanceService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,21 +36,21 @@ public class BalanceController {
   /** Credits the account or replays the original outcome without adding money twice. */
   @PostMapping("/credits")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void credit(@Valid @RequestBody BalanceMutation request) {
+  public void credit(@Valid @RequestBody BalanceMutationRequest request) {
     balances.credit(request.accountId(), request.amount(), request.transactionId());
   }
 
   /** Debits the account or reports its previously committed rejection. */
   @PostMapping("/debits")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void debit(@Valid @RequestBody BalanceMutation request) {
+  public void debit(@Valid @RequestBody BalanceMutationRequest request) {
     balances.debit(request.accountId(), request.amount(), request.transactionId());
   }
 
   /** Transfers atomically or replays the original transaction's outcome. */
   @PostMapping("/transfers")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void transfer(@Valid @RequestBody TransferMutation request) {
+  public void transfer(@Valid @RequestBody TransferMutationRequest request) {
     balances.transfer(
         request.sourceAccountId(),
         request.destinationAccountId(),
